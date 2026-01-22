@@ -11,59 +11,60 @@ import {
   Select,
   TextField,
   Typography,
-} from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
-import Toastify from "toastify-js";
+} from "@mui/material"
+import { useEffect, useMemo, useState } from "react"
+import { useSelector } from "react-redux"
+import Toastify from "toastify-js"
 import {
   getNFLAllPlayers,
   getPlayerOptions,
   handleSaveDifficultyAction,
   savePlayerOptions,
-} from "../../reducers/game.slice";
+} from "../../reducers/game.slice"
 
-import useStyles from "./styles";
+import useStyles from "./styles"
 
-import { useAppDispatch } from "../../app/hooks";
-import { RootState } from "../../app/store";
-import EditModal from "../../components/EditModal/EditModal";
-import NFLConfirmationModal from "../../components/NFLConfirmationModal/NFLConfirmationModal";
-import NFLOptionTableContainer from "../../components/NFLOptionTableContainer/NFLOptionTableContainer";
-import NFLPlayerTableContainer from "../../components/NFLPlayerTableContainer/NFLPlayerTableContainer";
-import { NFLPositions } from "../../config/config";
-import { ActiveStatus, Difficulty, PlayType } from "../../constant/const";
-import { NFLAllPlayer, PlayerOption } from "../../models/interface";
+import { useAppDispatch } from "../../app/hooks"
+import { RootState } from "../../app/store"
+import EditModal from "../../components/EditModal/EditModal"
+import NFLConfirmationModal from "../../components/NFLConfirmationModal/NFLConfirmationModal"
+import NFLOptionTableContainer from "../../components/NFLOptionTableContainer/NFLOptionTableContainer"
+import NFLPlayerTableContainer from "../../components/NFLPlayerTableContainer/NFLPlayerTableContainer"
+import { NFLPositions } from "../../config/config"
+import { ActiveStatus, Difficulty, PlayType } from "../../constant/const"
+import { NFLAllPlayer, PlayerOption } from "../../models/interface"
+import CSVUpload from "../../components/CSVUpload/CSVUpload"
 
 const AdminBoardNFL = () => {
-  const { classes } = useStyles();
-  const dispatch = useAppDispatch();
+  const { classes } = useStyles()
+  const dispatch = useAppDispatch()
 
-  const { isSavingOptions } = useSelector((state: RootState) => state.game);
+  const { isSavingOptions } = useSelector((state: RootState) => state.game)
   const { NFLAllPlayerList, optionList } = useSelector(
     (state: RootState) => state.game
-  );
+  )
 
-  const [experience, setExperience] = useState<string>("");
-  const [ageFrom, setAgeFrom] = useState<number>(0);
-  const [ageTo, setAgeTo] = useState<number>(0);
-  const [position, setPosition] = useState<string>("");
+  const [experience, setExperience] = useState<string>("")
+  const [ageFrom, setAgeFrom] = useState<number>(0)
+  const [ageTo, setAgeTo] = useState<number>(0)
+  const [position, setPosition] = useState<string>("")
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | -1>(
     -1
-  );
+  )
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [optionedPlayersCount, setOptionedPlayersCount] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [optionedPlayersCount, setOptionedPlayersCount] = useState(0)
 
-  const [filteredPlayers, setFilteredPlayers] = useState(NFLAllPlayerList);
-  const [activeViewId, setActiveViewId] = useState<number | null>(null);
-  const [page, setPage] = useState(0);
+  const [filteredPlayers, setFilteredPlayers] = useState(NFLAllPlayerList)
+  const [activeViewId, setActiveViewId] = useState<number | null>(null)
+  const [page, setPage] = useState(0)
 
-  const [selectedPlayer, setSelectedPlayer] = useState<number>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<number>(null)
 
   const [statusFilter, setStatusFilter] = useState<
     "All" | "Active" | "Inactive" | "Selected" | "Deselected" | "None"
-  >("All");
+  >("All")
 
   const handleFilterPlayers = () => {
     dispatch(
@@ -77,29 +78,29 @@ const AdminBoardNFL = () => {
         playType: PlayType.NFL,
       })
     ).then(() => {
-      dispatch(getPlayerOptions({ playType: PlayType.NFL }));
-    });
+      dispatch(getPlayerOptions({ playType: PlayType.NFL }))
+    })
 
-    setDialogOpen(false);
-  };
+    setDialogOpen(false)
+  }
 
   const isMatchForPlayerOption = (
     player: NFLAllPlayer,
     option: PlayerOption
   ) => {
     const positionMatch =
-      option.position === "-1" || player.position === option.position;
-    const experienceMatch = player.experience >= option.experience;
-    const ageFromMatch = player.age >= option.ageFrom;
-    const ageToMatch = player.age <= option.ageTo;
+      option.position === "-1" || player.position === option.position
+    const experienceMatch = player.experience >= option.experience
+    const ageFromMatch = player.age >= option.ageFrom
+    const ageToMatch = player.age <= option.ageTo
 
-    return positionMatch && experienceMatch && ageFromMatch && ageToMatch;
-  };
+    return positionMatch && experienceMatch && ageFromMatch && ageToMatch
+  }
 
   const handleViewFilteredPlayers = (option: PlayerOption) => {
     const filtered = NFLAllPlayerList.filter((player) =>
       isMatchForPlayerOption(player, option)
-    );
+    )
 
     if (filtered.length === 0) {
       Toastify({
@@ -109,15 +110,15 @@ const AdminBoardNFL = () => {
         gravity: "top",
         position: "right",
         backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-      }).showToast();
+      }).showToast()
     }
 
-    setFilteredPlayers(filtered);
-  };
+    setFilteredPlayers(filtered)
+  }
 
   const checkedPlayersCount = useMemo(() => {
-    return NFLAllPlayerList.filter((player) => player.checkStatus).length;
-  }, [NFLAllPlayerList]);
+    return NFLAllPlayerList.filter((player) => player.checkStatus).length
+  }, [NFLAllPlayerList])
 
   const handleSaveDifficultyStatus = (difficulty: Difficulty) => {
     dispatch(
@@ -131,20 +132,20 @@ const AdminBoardNFL = () => {
     )
       .unwrap()
       .then(() => {
-        dispatch(getNFLAllPlayers());
-      });
-  };
+        dispatch(getNFLAllPlayers())
+      })
+  }
 
   useEffect(() => {
-    if (statusFilter === "None") return;
+    if (statusFilter === "None") return
 
     const filterByDifficulty = (player: NFLAllPlayer) =>
-      selectedDifficulty === -1 || player.difficulty === selectedDifficulty;
+      selectedDifficulty === -1 || player.difficulty === selectedDifficulty
 
     const filteredPlayers = NFLAllPlayerList.filter((player) => {
       switch (statusFilter) {
         case "All":
-          return filterByDifficulty(player);
+          return filterByDifficulty(player)
 
         case "Active":
           return (
@@ -154,7 +155,7 @@ const AdminBoardNFL = () => {
               player.active !== ActiveStatus.Inactived) ||
               player.active === ActiveStatus.Actived) &&
             filterByDifficulty(player)
-          );
+          )
 
         case "Inactive":
           return (
@@ -164,26 +165,26 @@ const AdminBoardNFL = () => {
               player.active !== ActiveStatus.Actived) ||
               player.active === ActiveStatus.Inactived) &&
             filterByDifficulty(player)
-          );
+          )
 
         case "Selected":
           return (
             player.active === ActiveStatus.Actived && filterByDifficulty(player)
-          );
+          )
 
         case "Deselected":
           return (
             player.active === ActiveStatus.Inactived &&
             filterByDifficulty(player)
-          );
+          )
 
         default:
-          return false;
+          return false
       }
-    });
+    })
 
-    setFilteredPlayers(filteredPlayers);
-  }, [statusFilter, NFLAllPlayerList, optionList, selectedDifficulty]);
+    setFilteredPlayers(filteredPlayers)
+  }, [statusFilter, NFLAllPlayerList, optionList, selectedDifficulty])
 
   useEffect(() => {
     setOptionedPlayersCount(
@@ -195,16 +196,16 @@ const AdminBoardNFL = () => {
           position,
         } as PlayerOption)
       ).length
-    );
-  }, [experience, ageFrom, ageTo, position, NFLAllPlayerList]);
+    )
+  }, [experience, ageFrom, ageTo, position, NFLAllPlayerList])
 
   useEffect(() => {
-    setPage(0);
-  }, [statusFilter, activeViewId, selectedDifficulty]);
+    setPage(0)
+  }, [statusFilter, activeViewId, selectedDifficulty])
 
   useEffect(() => {
-    dispatch(getPlayerOptions({ playType: PlayType.NFL }));
-  }, [dispatch]);
+    dispatch(getPlayerOptions({ playType: PlayType.NFL }))
+  }, [dispatch])
 
   const handleSaveOption = () => {
     if (!position || experience === "" || !ageFrom || !ageTo) {
@@ -215,20 +216,20 @@ const AdminBoardNFL = () => {
         gravity: "top",
         position: "right",
         backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-      }).showToast();
-      return;
+      }).showToast()
+      return
     }
 
-    setDialogOpen(true);
-  };
+    setDialogOpen(true)
+  }
 
   const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
+    setDialogOpen(false)
+  }
 
   useEffect(() => {
-    dispatch(getNFLAllPlayers());
-  }, [dispatch]);
+    dispatch(getNFLAllPlayers())
+  }, [dispatch])
 
   return (
     <Paper className={classes.adminBoard}>
@@ -242,6 +243,13 @@ const AdminBoardNFL = () => {
           Admin Board (NFL)
         </Typography>
       </Box>
+
+      <CSVUpload
+        onUploadSuccess={() => {
+          dispatch(getNFLAllPlayers())
+        }}
+        league="NFL"
+      />
 
       <Grid
         container
@@ -324,12 +332,12 @@ const AdminBoardNFL = () => {
               <MenuItem value="-1">All</MenuItem>
               {Object.keys(NFLPositions).map((key) => {
                 const positionValue =
-                  NFLPositions[key as keyof typeof NFLPositions];
+                  NFLPositions[key as keyof typeof NFLPositions]
                 return (
                   <MenuItem key={key} value={positionValue}>
                     {positionValue} {/* Display position name */}
                   </MenuItem>
-                );
+                )
               })}
             </Select>
           </FormControl>
@@ -371,8 +379,8 @@ const AdminBoardNFL = () => {
             variant={statusFilter === "All" ? "contained" : "outlined"}
             color={statusFilter === "All" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("All");
-              setActiveViewId(null);
+              setStatusFilter("All")
+              setActiveViewId(null)
             }}
           >
             All Players
@@ -381,8 +389,8 @@ const AdminBoardNFL = () => {
             variant={statusFilter === "Active" ? "contained" : "outlined"}
             color={statusFilter === "Active" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Active");
-              setActiveViewId(null);
+              setStatusFilter("Active")
+              setActiveViewId(null)
             }}
           >
             Active
@@ -391,8 +399,8 @@ const AdminBoardNFL = () => {
             variant={statusFilter === "Inactive" ? "contained" : "outlined"}
             color={statusFilter === "Inactive" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Inactive");
-              setActiveViewId(null);
+              setStatusFilter("Inactive")
+              setActiveViewId(null)
             }}
           >
             Inactive
@@ -401,8 +409,8 @@ const AdminBoardNFL = () => {
             variant={statusFilter === "Selected" ? "contained" : "outlined"}
             color={statusFilter === "Selected" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Selected");
-              setActiveViewId(null);
+              setStatusFilter("Selected")
+              setActiveViewId(null)
             }}
           >
             Selected
@@ -411,8 +419,8 @@ const AdminBoardNFL = () => {
             variant={statusFilter === "Deselected" ? "contained" : "outlined"}
             color={statusFilter === "Deselected" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Deselected");
-              setActiveViewId(null);
+              setStatusFilter("Deselected")
+              setActiveViewId(null)
             }}
           >
             Deselected
@@ -452,7 +460,7 @@ const AdminBoardNFL = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.None);
+                handleSaveDifficultyStatus(Difficulty.None)
               }}
             >
               None
@@ -460,7 +468,7 @@ const AdminBoardNFL = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.Easy);
+                handleSaveDifficultyStatus(Difficulty.Easy)
               }}
             >
               Easy
@@ -468,7 +476,7 @@ const AdminBoardNFL = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.Medium);
+                handleSaveDifficultyStatus(Difficulty.Medium)
               }}
             >
               Medium
@@ -476,7 +484,7 @@ const AdminBoardNFL = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.Hard);
+                handleSaveDifficultyStatus(Difficulty.Hard)
               }}
             >
               Hard
@@ -490,8 +498,8 @@ const AdminBoardNFL = () => {
       <NFLPlayerTableContainer
         viewedPlayers={filteredPlayers}
         setSelectedPlayer={(id: number) => {
-          setSelectedPlayer(id);
-          setEditDialogOpen(true);
+          setSelectedPlayer(id)
+          setEditDialogOpen(true)
         }}
         page={page}
         setPage={setPage}
@@ -511,7 +519,7 @@ const AdminBoardNFL = () => {
         id={selectedPlayer}
       />
     </Paper>
-  );
-};
+  )
+}
 
-export default AdminBoardNFL;
+export default AdminBoardNFL

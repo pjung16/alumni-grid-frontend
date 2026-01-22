@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
-import Toastify from "toastify-js";
-import "toastify-js/src/toastify.css";
+import React, { useEffect, useMemo, useState } from "react"
+import { useSelector } from "react-redux"
+import Toastify from "toastify-js"
+import "toastify-js/src/toastify.css"
 import {
   FormControl,
   InputLabel,
@@ -15,58 +15,59 @@ import {
   TextField,
   CircularProgress,
   ButtonGroup,
-} from "@mui/material";
-import { SelectChangeEvent } from "@mui/material";
+} from "@mui/material"
+import { SelectChangeEvent } from "@mui/material"
 import {
   savePlayerOptions,
   getPlayerOptions,
   getNBAAllPlayers,
   handleSaveDifficultyAction,
-} from "../../reducers/game.slice";
+} from "../../reducers/game.slice"
 
-import useStyles from "./styles";
-import NBAConfirmationModal from "../../components/NBAConfirmationModal/NBAConfirmationModal";
-import { RootState } from "../../app/store";
-import NBAPlayerTableContainer from "../../components/NBAPlayerTableContainer/NBAPlayerTableContainer";
-import NBAOptionTableContainer from "../../components/NBAOptionTableContainer/NBAOptionTableContainer";
-import { AllPlayer, PlayerOption } from "../../models/interface";
-import { ActiveStatus, Difficulty, PlayType } from "../../constant/const";
-import { useAppDispatch } from "../../app/hooks";
-import EditModal from "../../components/EditModal/EditModal";
+import useStyles from "./styles"
+import NBAConfirmationModal from "../../components/NBAConfirmationModal/NBAConfirmationModal"
+import { RootState } from "../../app/store"
+import NBAPlayerTableContainer from "../../components/NBAPlayerTableContainer/NBAPlayerTableContainer"
+import NBAOptionTableContainer from "../../components/NBAOptionTableContainer/NBAOptionTableContainer"
+import { AllPlayer, PlayerOption } from "../../models/interface"
+import { ActiveStatus, Difficulty, PlayType } from "../../constant/const"
+import { useAppDispatch } from "../../app/hooks"
+import EditModal from "../../components/EditModal/EditModal"
+import CSVUpload from "../../components/CSVUpload/CSVUpload"
 
 const AdminBoardNBA = () => {
-  const { classes } = useStyles();
-  const dispatch = useAppDispatch();
+  const { classes } = useStyles()
+  const dispatch = useAppDispatch()
 
-  const { isSavingOptions } = useSelector((state: RootState) => state.game);
+  const { isSavingOptions } = useSelector((state: RootState) => state.game)
   const { allPlayerList, optionList } = useSelector(
     (state: RootState) => state.game
-  );
+  )
 
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
-  const [draftYear, setDraftYear] = useState<number>(1900);
-  const [position, setPosition] = useState<string>("");
-  const [page, setPage] = useState(0);
+  const [selectedCountry, setSelectedCountry] = useState<string>("")
+  const [draftYear, setDraftYear] = useState<number>(1900)
+  const [position, setPosition] = useState<string>("")
+  const [page, setPage] = useState(0)
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | -1>(
     -1
-  );
+  )
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [optionedPlayersCount, setOptionedPlayersCount] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [optionedPlayersCount, setOptionedPlayersCount] = useState(0)
 
-  const [filteredPlayers, setFilteredPlayers] = useState(allPlayerList);
-  const [activeViewId, setActiveViewId] = useState<number | null>(null);
+  const [filteredPlayers, setFilteredPlayers] = useState(allPlayerList)
+  const [activeViewId, setActiveViewId] = useState<number | null>(null)
 
-  const [selectedPlayer, setSelectedPlayer] = useState<number>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<number>(null)
 
   const [statusFilter, setStatusFilter] = useState<
     "All" | "Active" | "Inactive" | "Selected" | "Deselected" | "None"
-  >("All");
+  >("All")
 
   const handleCountryChange = (event: SelectChangeEvent<string>) => {
-    setSelectedCountry(event.target.value);
-  };
+    setSelectedCountry(event.target.value)
+  }
 
   const handleFilterPlayers = () => {
     dispatch(
@@ -79,15 +80,15 @@ const AdminBoardNBA = () => {
         playType: PlayType.NBA,
       })
     ).then(() => {
-      dispatch(getPlayerOptions({ playType: PlayType.NBA }));
-    });
+      dispatch(getPlayerOptions({ playType: PlayType.NBA }))
+    })
 
-    setDialogOpen(false);
-  };
+    setDialogOpen(false)
+  }
 
   useEffect(() => {
-    dispatch(getPlayerOptions({ playType: PlayType.NBA }));
-  }, [dispatch]);
+    dispatch(getPlayerOptions({ playType: PlayType.NBA }))
+  }, [dispatch])
 
   const handleSaveOption = () => {
     if (!position || !selectedCountry || !draftYear) {
@@ -98,32 +99,32 @@ const AdminBoardNBA = () => {
         gravity: "top",
         position: "right",
         backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-      }).showToast();
-      return;
+      }).showToast()
+      return
     }
 
-    setDialogOpen(true);
-  };
+    setDialogOpen(true)
+  }
 
   const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
+    setDialogOpen(false)
+  }
 
   const isMatchForPlayerOption = (player: AllPlayer, option: PlayerOption) => {
     const positionMatch =
-      option.position === "-1" || player.position === option.position;
+      option.position === "-1" || player.position === option.position
 
     const countryMatch =
-      option.country === "-1" || player.country === option.country;
-    const draftMatch = option.draft === -1 || player.draftYear >= option.draft;
+      option.country === "-1" || player.country === option.country
+    const draftMatch = option.draft === -1 || player.draftYear >= option.draft
 
-    return positionMatch && countryMatch && draftMatch;
-  };
+    return positionMatch && countryMatch && draftMatch
+  }
 
   const handleViewFilteredPlayers = (option: PlayerOption) => {
     const filtered = allPlayerList.filter((player) =>
       isMatchForPlayerOption(player, option)
-    );
+    )
 
     if (filtered.length === 0) {
       Toastify({
@@ -133,15 +134,15 @@ const AdminBoardNBA = () => {
         gravity: "top",
         position: "right",
         backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-      }).showToast();
+      }).showToast()
     }
 
-    setFilteredPlayers(filtered);
-  };
+    setFilteredPlayers(filtered)
+  }
 
   const checkedPlayersCount = useMemo(() => {
-    return allPlayerList.filter((player) => player.checkStatus).length;
-  }, [allPlayerList]);
+    return allPlayerList.filter((player) => player.checkStatus).length
+  }, [allPlayerList])
 
   const handleSaveDifficultyStatus = (difficulty: Difficulty) => {
     dispatch(
@@ -155,20 +156,20 @@ const AdminBoardNBA = () => {
     )
       .unwrap()
       .then(() => {
-        dispatch(getNBAAllPlayers());
-      });
-  };
+        dispatch(getNBAAllPlayers())
+      })
+  }
 
   useEffect(() => {
-    if (statusFilter === "None") return;
+    if (statusFilter === "None") return
 
     const filterByDifficulty = (player: AllPlayer) =>
-      selectedDifficulty === -1 || player.difficulty === selectedDifficulty;
+      selectedDifficulty === -1 || player.difficulty === selectedDifficulty
 
     const filteredPlayers = allPlayerList.filter((player) => {
       switch (statusFilter) {
         case "All":
-          return filterByDifficulty(player);
+          return filterByDifficulty(player)
 
         case "Active":
           return (
@@ -178,7 +179,7 @@ const AdminBoardNBA = () => {
               player.active !== ActiveStatus.Inactived) ||
               player.active === ActiveStatus.Actived) &&
             filterByDifficulty(player)
-          );
+          )
 
         case "Inactive":
           return (
@@ -188,30 +189,30 @@ const AdminBoardNBA = () => {
               player.active !== ActiveStatus.Actived) ||
               player.active === ActiveStatus.Inactived) &&
             filterByDifficulty(player)
-          );
+          )
 
         case "Selected":
           return (
             player.active === ActiveStatus.Actived && filterByDifficulty(player)
-          );
+          )
 
         case "Deselected":
           return (
             player.active === ActiveStatus.Inactived &&
             filterByDifficulty(player)
-          );
+          )
 
         default:
-          return false;
+          return false
       }
-    });
+    })
 
-    setFilteredPlayers(filteredPlayers);
-  }, [statusFilter, allPlayerList, optionList, selectedDifficulty]);
+    setFilteredPlayers(filteredPlayers)
+  }, [statusFilter, allPlayerList, optionList, selectedDifficulty])
 
   useEffect(() => {
-    setPage(0);
-  }, [statusFilter, activeViewId, selectedDifficulty]);
+    setPage(0)
+  }, [statusFilter, activeViewId, selectedDifficulty])
 
   useEffect(() => {
     setOptionedPlayersCount(
@@ -222,12 +223,12 @@ const AdminBoardNBA = () => {
           position,
         } as PlayerOption)
       ).length
-    );
-  }, [selectedCountry, draftYear, position, allPlayerList]);
+    )
+  }, [selectedCountry, draftYear, position, allPlayerList])
 
   useEffect(() => {
-    dispatch(getNBAAllPlayers());
-  }, [dispatch]);
+    dispatch(getNBAAllPlayers())
+  }, [dispatch])
 
   return (
     <Paper className={classes.adminBoard}>
@@ -241,6 +242,13 @@ const AdminBoardNBA = () => {
           Admin Board (NBA)
         </Typography>
       </Box>
+
+      <CSVUpload
+        onUploadSuccess={() => {
+          dispatch(getNBAAllPlayers())
+        }}
+        league="NBA"
+      />
 
       <Grid
         container
@@ -352,8 +360,8 @@ const AdminBoardNBA = () => {
             variant={statusFilter === "All" ? "contained" : "outlined"}
             color={statusFilter === "All" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("All");
-              setActiveViewId(null);
+              setStatusFilter("All")
+              setActiveViewId(null)
             }}
           >
             All Players
@@ -362,8 +370,8 @@ const AdminBoardNBA = () => {
             variant={statusFilter === "Active" ? "contained" : "outlined"}
             color={statusFilter === "Active" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Active");
-              setActiveViewId(null);
+              setStatusFilter("Active")
+              setActiveViewId(null)
             }}
           >
             Active
@@ -372,8 +380,8 @@ const AdminBoardNBA = () => {
             variant={statusFilter === "Inactive" ? "contained" : "outlined"}
             color={statusFilter === "Inactive" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Inactive");
-              setActiveViewId(null);
+              setStatusFilter("Inactive")
+              setActiveViewId(null)
             }}
           >
             Inactive
@@ -382,8 +390,8 @@ const AdminBoardNBA = () => {
             variant={statusFilter === "Selected" ? "contained" : "outlined"}
             color={statusFilter === "Selected" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Selected");
-              setActiveViewId(null);
+              setStatusFilter("Selected")
+              setActiveViewId(null)
             }}
           >
             Selected
@@ -392,8 +400,8 @@ const AdminBoardNBA = () => {
             variant={statusFilter === "Deselected" ? "contained" : "outlined"}
             color={statusFilter === "Deselected" ? "primary" : "inherit"}
             onClick={() => {
-              setStatusFilter("Deselected");
-              setActiveViewId(null);
+              setStatusFilter("Deselected")
+              setActiveViewId(null)
             }}
           >
             Deselected
@@ -433,7 +441,7 @@ const AdminBoardNBA = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.None);
+                handleSaveDifficultyStatus(Difficulty.None)
               }}
             >
               None
@@ -441,7 +449,7 @@ const AdminBoardNBA = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.Easy);
+                handleSaveDifficultyStatus(Difficulty.Easy)
               }}
             >
               Easy
@@ -449,7 +457,7 @@ const AdminBoardNBA = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.Medium);
+                handleSaveDifficultyStatus(Difficulty.Medium)
               }}
             >
               Medium
@@ -457,7 +465,7 @@ const AdminBoardNBA = () => {
             <Button
               variant={"contained"}
               onClick={() => {
-                handleSaveDifficultyStatus(Difficulty.Hard);
+                handleSaveDifficultyStatus(Difficulty.Hard)
               }}
             >
               Hard
@@ -471,8 +479,8 @@ const AdminBoardNBA = () => {
       <NBAPlayerTableContainer
         viewedPlayers={filteredPlayers}
         setSelectedPlayer={(id: number) => {
-          setSelectedPlayer(id);
-          setEditDialogOpen(true);
+          setSelectedPlayer(id)
+          setEditDialogOpen(true)
         }}
         page={page}
         setPage={setPage}
@@ -492,7 +500,7 @@ const AdminBoardNBA = () => {
         id={selectedPlayer}
       />
     </Paper>
-  );
-};
+  )
+}
 
-export default AdminBoardNBA;
+export default AdminBoardNBA
