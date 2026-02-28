@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import axios from "axios";
@@ -11,6 +11,9 @@ import CollegeModal from "../../components/CollegeModal/CollegeModal";
 import AnswerModal from "../../components/AnswerModal/AnswerModal";
 import SummaryModal from "../../components/SummaryModal/SummaryModal";
 import ArchiveModal from "../../components/ArchiveModal/ArchiveModal";
+import GoogleSignIn from "../../components/GoogleSignIn/GoogleSignIn";
+import DailyLeaderboard from "../../components/DailyLeaderboard/DailyLeaderboard";
+import { useAuth } from "../../context/AuthContext";
 
 import useStyles from "./styles";
 import { GameSetting, PlayerInfo } from "../../models/interface";
@@ -46,17 +49,23 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
   );
   const dispatch = useAppDispatch();
 
+  const { user } = useAuth();
   const [targetItem, setTargetItem] = useState<PlayerInfo | null>(null);
 
   const [open, setOpen] = useState(false);
   const [answerOpen, setAnswerOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const [isConfirming, setIsConfirming] = useState(false);
   const [remainTime, setRemainTime] = useState(0);
   const [spentTime, setSpentTime] = useState(0);
   const [explosion, setExplosion] = useState(false);
+
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [percentile, setPercentile] = useState<number | null>(null);
+  const [totalPlayers, setTotalPlayers] = useState<number>(0);
 
   const [gameSetting, setGameSetting] = useState<GameSetting>({
     createTime: 0,
@@ -214,6 +223,36 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
     );
   }, [playType, gameSetting]);
 
+  const submitScoreToLeaderboard = useCallback(async () => {
+    if (!user || !gameSetting.endStatus || scoreSubmitted) return;
+    try {
+      await axios.post(`${SERVER_URL}/leaderboard/submit`, {
+        userId: user.id,
+        score: gameSetting.score,
+        playType: playType,
+        timestamp: timeStampParam,
+      });
+      setScoreSubmitted(true);
+    } catch (err) {
+      console.error("Failed to submit score:", err);
+    }
+  }, [user, gameSetting.endStatus, gameSetting.score, playType, timeStampParam, scoreSubmitted]);
+
+  const fetchPercentile = useCallback(async () => {
+    if (!gameSetting.endStatus) return;
+    try {
+      const response = await axios.get(
+        `${SERVER_URL}/leaderboard/percentile/${gameSetting.score}/${playType}/${timeStampParam}`
+      );
+      if (response.data.status === 200) {
+        setPercentile(response.data.data.percentile);
+        setTotalPlayers(response.data.data.totalPlayers);
+      }
+    } catch (err) {
+      console.error("Failed to fetch percentile:", err);
+    }
+  }, [gameSetting.endStatus, gameSetting.score, playType, timeStampParam]);
+
   useEffect(() => {
     loadGameData();
   }, [loadGameData]);
@@ -278,6 +317,18 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
     }
   }, [explosion]);
 
+  useEffect(() => {
+    if (gameSetting.endStatus && user && !scoreSubmitted) {
+      submitScoreToLeaderboard();
+    }
+  }, [gameSetting.endStatus, user, scoreSubmitted, submitScoreToLeaderboard]);
+
+  useEffect(() => {
+    if (gameSetting.endStatus) {
+      fetchPercentile();
+    }
+  }, [gameSetting.endStatus, fetchPercentile]);
+
   return (
     <Box
       className={clsx(
@@ -285,6 +336,25 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
         playType === PlayType.NBA ? classes.nbaBg : classes.nflBg
       )}
     >
+      <Box sx={{ position: "absolute", top: "10px", right: "10px", zIndex: 10 }}>
+        <GoogleSignIn />
+      </Box>
+
+      {!user && !gameSetting.endStatus && gameSetting.createTime !== 0 && (
+        <Box sx={{
+          textAlign: "center",
+          padding: "6px 12px",
+          marginBottom: "8px",
+          backgroundColor: "rgba(255,255,255,0.05)",
+          borderRadius: "8px",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "12px" }}>
+            Sign in with Google to compete on the daily leaderboard!
+          </Typography>
+        </Box>
+      )}
+
       <Box className={classes.buttonContainer}>
         <Button
           className={classes.infoButton}
@@ -306,12 +376,12 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
         >
           {isMobile() ? (
             <Box sx={{ fontSize: "20px" }}>
-              {playType === PlayType.NBA ? "🏈" : "🏀"}
+              {playType === PlayType.NBA ? "ðŸˆ" : "ðŸ€"}
             </Box>
           ) : playType === PlayType.NBA ? (
-            "NFL Grid 🏈"
+            "NFL Grid ðŸˆ"
           ) : (
-            "NBA Grid 🏀"
+            "NBA Grid ðŸ€"
           )}
         </Button>
       </Box>
@@ -380,6 +450,16 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
           <Box className={classes.guessLeftTxt}>SCORE</Box>
           <Box className={classes.score}>{gameSetting.score}</Box>
         </Box>
+        {gameSetting.endStatus && percentile !== null && totalPlayers > 0 && (
+          <Typography sx={{
+            color: "#4CAF50",
+            fontSize: "13px",
+            textAlign: "center",
+            marginTop: "4px",
+          }}>
+            You beat {percentile}% of users today
+          </Typography>
+        )}
         {!gameSetting.endStatus && (
           <>
             <Button
@@ -416,6 +496,35 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
             >
               Show Summary
             </Button>
+          )}
+          {gameSetting.endStatus && (
+            <Button
+              variant="contained"
+              sx={{ textTransform: "none" }}
+              onClick={() => setShowLeaderboard(true)}
+            >
+              Daily Leaderboard
+            </Button>
+          )}
+          {!user && gameSetting.endStatus && (
+            <Box sx={{
+              textAlign: "center",
+              padding: "10px 16px",
+              marginTop: "4px",
+              backgroundColor: "rgba(255,255,255,0.05)",
+              borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}>
+              <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "13px", marginBottom: "8px" }}>
+                Sign in to submit your score to the leaderboard!
+              </Typography>
+              <GoogleSignIn />
+            </Box>
+          )}
+          {user && gameSetting.endStatus && scoreSubmitted && (
+            <Typography sx={{ color: "#4CAF50", fontSize: "12px", marginTop: "4px", textAlign: "center" }}>
+              Score submitted to leaderboard!
+            </Typography>
           )}
           <Button
             variant="contained"
@@ -458,12 +567,39 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
         onClose={(summaryOpen) => setSummaryOpen(summaryOpen)}
         gameSetting={gameSetting}
         playType={playType}
+        percentile={percentile}
+        totalPlayers={totalPlayers}
       />
       <ArchiveModal
         open={archiveOpen}
         onClose={(archiveOpen) => setArchiveOpen(archiveOpen)}
         playType={playType}
       />
+      {showLeaderboard && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowLeaderboard(false)}
+        >
+          <Box onClick={(e) => e.stopPropagation()}>
+            <DailyLeaderboard
+              playType={playType}
+              timestamp={timeStampParam}
+              onClose={() => setShowLeaderboard(false)}
+            />
+          </Box>
+        </Box>
+      )}
       {explosion && (
         <ConfettiExplosion
           duration={3000}

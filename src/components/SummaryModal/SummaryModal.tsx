@@ -1,10 +1,8 @@
-import useStyles from "./styles";
+﻿import useStyles from "./styles";
 import { Box, Modal, Typography, IconButton } from "@mui/material";
 import { GameSetting } from "../../models/interface";
 import gsap from "gsap";
-
 import CloseIcon from "@mui/icons-material/Close";
-
 import SummaryGrid from "../SummaryGrid/SummaryGrid";
 import { convertPSTTime } from "../../utils/utils";
 import { PlayType, PlayTypeInfo } from "../../constant/const";
@@ -16,14 +14,17 @@ const SummaryModal = ({
   onClose,
   gameSetting,
   playType,
+  percentile,
+  totalPlayers,
 }: {
   open: boolean;
   onClose: (summaryOpen: boolean) => void;
   gameSetting: GameSetting;
   playType: PlayType;
+  percentile?: number | null;
+  totalPlayers?: number;
 }) => {
   const { classes } = useStyles();
-
   const modalRef = useRef(null);
   const [animatedScore, setAnimatedScore] = useState(0);
 
@@ -35,7 +36,6 @@ const SummaryModal = ({
       scale: 0.95,
       ease: "power2.in",
     });
-
     setTimeout(() => {
       onClose(false);
     }, 300);
@@ -43,7 +43,6 @@ const SummaryModal = ({
 
   useEffect(() => {
     if (!modalRef.current) return;
-
     if (open) {
       gsap.fromTo(
         modalRef.current,
@@ -65,20 +64,16 @@ const SummaryModal = ({
 
   useEffect(() => {
     if (gameSetting.score === 0) return;
-
     let currentScore = 0;
     const targetScore = gameSetting.score;
-
     const interval = setInterval(() => {
       currentScore += Math.ceil(targetScore / 20);
       if (currentScore >= targetScore) {
         currentScore = targetScore;
         clearInterval(interval);
       }
-
       setAnimatedScore(currentScore);
     }, 30);
-
     return () => {
       clearInterval(interval);
     };
@@ -115,6 +110,16 @@ const SummaryModal = ({
         <Typography sx={{ fontSize: "24px" }}>
           Score: {animatedScore}
         </Typography>
+        {percentile !== null && percentile !== undefined && totalPlayers && totalPlayers > 0 && (
+          <Typography sx={{
+            fontSize: "15px",
+            color: "#4CAF50",
+            fontWeight: 600,
+            marginTop: "4px",
+          }}>
+            You beat {percentile}% of users today
+          </Typography>
+        )}
         <SummaryGrid playType={playType} gameSetting={gameSetting} />
       </Box>
     </Modal>
