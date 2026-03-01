@@ -59,14 +59,7 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-const [infoOpen, setInfoOpen] = useState(() => {
-    const hasVisited = localStorage.getItem("alumniGridVisited");
-    if (!hasVisited) {
-      localStorage.setItem("alumniGridVisited", "true");
-      return true;
-    }
-    return false;
-  });
+const [infoOpen, setInfoOpen] = useState(false);
   const [usernameOpen, setUsernameOpen] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [usernameError, setUsernameError] = useState("");
@@ -339,6 +332,13 @@ useEffect(() => {
       setUsernameOpen(true);
     }
   }, [user]);
+useEffect(() => {
+    const hasVisited = localStorage.getItem("alumniGridVisited");
+    if (!hasVisited) {
+      localStorage.setItem("alumniGridVisited", "true");
+      setInfoOpen(true);
+    }
+  }, []);
   useEffect(() => {
     if (gameSetting.endStatus && user && !scoreSubmitted) {
       submitScoreToLeaderboard();
