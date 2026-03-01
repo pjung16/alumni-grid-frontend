@@ -347,23 +347,25 @@ useEffect(() => {
 useEffect(() => {
     if (gameSetting.endStatus) {
       const key = `completion-${playType}-${timeStampParam}`;
-      if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, "true");
-        axios.post(`${SERVER_URL}/leaderboard/complete`, {
-          score: gameSetting.score,
-          playType: playType,
-          timestamp: timeStampParam,
-        }).catch(err => console.error("Failed to submit completion:", err));
-      }
+      const submitAndFetch = async () => {
+        if (!localStorage.getItem(key)) {
+          localStorage.setItem(key, "true");
+          try {
+            await axios.post(`${SERVER_URL}/leaderboard/complete`, {
+              score: gameSetting.score,
+              playType: playType,
+              timestamp: timeStampParam,
+            });
+          } catch (err) {
+            console.error("Failed to submit completion:", err);
+          }
+        }
+        fetchPercentile();
+      };
+      submitAndFetch();
     }
   }, [gameSetting.endStatus]);
-
-  useEffect(() => {
-    if (gameSetting.endStatus) {
-      fetchPercentile();
-    }
-  }, [gameSetting.endStatus, fetchPercentile]);
-
+ 
   return (
     <Box
       className={clsx(
