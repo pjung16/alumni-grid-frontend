@@ -344,6 +344,19 @@ useEffect(() => {
       submitScoreToLeaderboard();
     }
   }, [gameSetting.endStatus, user, scoreSubmitted, submitScoreToLeaderboard]);
+useEffect(() => {
+    if (gameSetting.endStatus) {
+      const key = `completion-${playType}-${timeStampParam}`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, "true");
+        axios.post(`${SERVER_URL}/leaderboard/complete`, {
+          score: gameSetting.score,
+          playType: playType,
+          timestamp: timeStampParam,
+        }).catch(err => console.error("Failed to submit completion:", err));
+      }
+    }
+  }, [gameSetting.endStatus]);
 
   useEffect(() => {
     if (gameSetting.endStatus) {
