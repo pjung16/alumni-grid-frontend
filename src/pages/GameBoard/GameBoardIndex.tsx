@@ -356,21 +356,7 @@ if (!gameStartedRef.current) {
       </Box>
       )}
      
-      {!user && !gameSetting.endStatus && gameSetting.createTime !== 0 && (
-        <Box sx={{
-          textAlign: "center",
-          padding: "6px 12px",
-          marginBottom: "8px",
-          backgroundColor: "rgba(255,255,255,0.05)",
-          borderRadius: "8px",
-          border: "1px solid rgba(255,255,255,0.1)",
-        }}>
-          <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "12px" }}>
-            Sign in with Google to compete on the daily leaderboard!
-          </Typography>
-        </Box>
-      )}
-
+     
       <Box className={classes.buttonContainer}>
         <Button
           className={classes.infoButton}
@@ -659,6 +645,9 @@ Prior Grids
           </Box>
           <Typography sx={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
             Click on the sport icons to switch grids
+          </Typography>
+          <Typography sx={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
+            Sign in with Google to compete on the daily leaderboard!
           </Typography>
         </Box>
       </Modal>
