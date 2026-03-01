@@ -51,7 +51,7 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
   );
   const dispatch = useAppDispatch();
 
-  const { user } = useAuth();
+  const { user, setUsername } = useAuth();
   const [targetItem, setTargetItem] = useState<PlayerInfo | null>(null);
 
   const [open, setOpen] = useState(false);
@@ -67,6 +67,9 @@ const [infoOpen, setInfoOpen] = useState(() => {
     }
     return false;
   });
+  const [usernameOpen, setUsernameOpen] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameError, setUsernameError] = useState("");
 
   const [isConfirming, setIsConfirming] = useState(false);
   const [remainTime, setRemainTime] = useState(0);
@@ -331,6 +334,11 @@ if (!gameStartedRef.current) {
       }, 5000);
     }
   }, [explosion]);
+useEffect(() => {
+    if (user && !user.username) {
+      setUsernameOpen(true);
+    }
+  }, [user]);
   useEffect(() => {
     if (gameSetting.endStatus && user && !scoreSubmitted) {
       submitScoreToLeaderboard();
@@ -649,6 +657,67 @@ Prior Grids
           <Typography sx={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
             Sign in with Google to compete on the daily leaderboard!
           </Typography>
+        </Box>
+      </Modal>
+<Modal open={usernameOpen} onClose={() => {}} slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.5)" } } }}>
+        <Box sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "white",
+          borderRadius: "16px",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          padding: { xs: "24px", md: "32px" },
+          width: { xs: "85%", md: "400px" },
+          textAlign: "center",
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: "8px" }}>
+            Choose a Username
+          </Typography>
+          <Typography sx={{ fontSize: "13px", color: "#666", marginBottom: "16px" }}>
+            This will be shown on the leaderboard
+          </Typography>
+          <input
+            type="text"
+            value={usernameInput}
+            onChange={(e) => {
+              setUsernameInput(e.target.value);
+              setUsernameError("");
+            }}
+            placeholder="Enter username (3-20 characters)"
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              fontSize: "14px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              outline: "none",
+              boxSizing: "border-box",
+              marginBottom: "8px",
+            }}
+          />
+          {usernameError && (
+            <Typography sx={{ color: "red", fontSize: "12px", marginBottom: "8px" }}>
+              {usernameError}
+            </Typography>
+          )}
+          <Button
+            variant="contained"
+            sx={{ textTransform: "none", marginTop: "8px" }}
+            onClick={async () => {
+              try {
+                const success = await setUsername(usernameInput);
+                if (success) {
+                  setUsernameOpen(false);
+                }
+              } catch (err: any) {
+                setUsernameError(err.message || "Failed to set username");
+              }
+            }}
+          >
+            Save Username
+          </Button>
         </Box>
       </Modal>
       <ArchiveModal
