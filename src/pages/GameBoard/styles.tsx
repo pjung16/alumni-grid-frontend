@@ -19,16 +19,11 @@ const styles = makeStyles()((theme: Theme) => ({
     },
   },
 
-  nbaBg: {
-    background: "url(/assets/background.jpg)",
-    backgroundSize: "cover",
-    backgroundRepeat: "no-repeat",
+nbaBg: {
+    background: "#2a2a2a",
   },
-
   nflBg: {
-    background: "url(/assets/nflbg.jpg)",
-    backgroundSize: "cover",
-    backgroundRepeat: "no-repeat",
+    background: "#2a2a2a",
   },
 
   gameTitle: {
@@ -39,6 +34,10 @@ const styles = makeStyles()((theme: Theme) => ({
     textAlign: "center",
     padding: "8px",
     borderRadius: "4px",
+[theme.breakpoints.down("sm")]: {
+      marginTop: "20px",
+      marginBottom: "-20px",
+    },
   },
 
   leftPanel: {

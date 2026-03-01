@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Box, Button, Typography, Modal, IconButton } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import axios from "axios";
 import { clsx } from "clsx";
 import InfoIcon from "@mui/icons-material/Info";
+import CloseIcon from "@mui/icons-material/Close";
+import gsap from "gsap";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ConfettiExplosion from "react-confetti-explosion";
 
@@ -11,6 +13,9 @@ import CollegeModal from "../../components/CollegeModal/CollegeModal";
 import AnswerModal from "../../components/AnswerModal/AnswerModal";
 import SummaryModal from "../../components/SummaryModal/SummaryModal";
 import ArchiveModal from "../../components/ArchiveModal/ArchiveModal";
+import GoogleSignIn from "../../components/GoogleSignIn/GoogleSignIn";
+import DailyLeaderboard from "../../components/DailyLeaderboard/DailyLeaderboard";
+import { useAuth } from "../../context/AuthContext";
 
 import useStyles from "./styles";
 import { GameSetting, PlayerInfo } from "../../models/interface";
@@ -46,17 +51,33 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
   );
   const dispatch = useAppDispatch();
 
+  const { user } = useAuth();
   const [targetItem, setTargetItem] = useState<PlayerInfo | null>(null);
 
   const [open, setOpen] = useState(false);
   const [answerOpen, setAnswerOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+const [infoOpen, setInfoOpen] = useState(() => {
+    const hasVisited = localStorage.getItem("alumniGridVisited");
+    if (!hasVisited) {
+      localStorage.setItem("alumniGridVisited", "true");
+      return true;
+    }
+    return false;
+  });
 
   const [isConfirming, setIsConfirming] = useState(false);
   const [remainTime, setRemainTime] = useState(0);
   const [spentTime, setSpentTime] = useState(0);
   const [explosion, setExplosion] = useState(false);
+
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+const gameStartedRef = useRef(false);
+const infoModalRef = useRef(null);
+  const [percentile, setPercentile] = useState<number | null>(null);
+  const [totalPlayers, setTotalPlayers] = useState<number>(0);
 
   const [gameSetting, setGameSetting] = useState<GameSetting>({
     createTime: 0,
@@ -178,9 +199,12 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
     };
     updateGameSetting(initialSetting);
 
-    axios.post(`${SERVER_URL}/game/gamestart/${playType}`, {
-      timestamp: timeStampParam,
-    });
+if (!gameStartedRef.current) {
+      gameStartedRef.current = true;
+      axios.post(`${SERVER_URL}/game/gamestart/${playType}`, {
+        timestamp: timeStampParam,
+      });
+    }
   }, [history, timeStampParam, playType]);
 
   const handleEndGame = useCallback(() => {
@@ -213,6 +237,36 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
       JSON.stringify(updatedData)
     );
   }, [playType, gameSetting]);
+
+  const submitScoreToLeaderboard = useCallback(async () => {
+    if (!user || !gameSetting.endStatus || scoreSubmitted) return;
+    try {
+      await axios.post(`${SERVER_URL}/leaderboard/submit`, {
+        userId: user.id,
+        score: gameSetting.score,
+        playType: playType,
+        timestamp: timeStampParam,
+      });
+      setScoreSubmitted(true);
+    } catch (err) {
+      console.error("Failed to submit score:", err);
+    }
+  }, [user, gameSetting.endStatus, gameSetting.score, playType, timeStampParam, scoreSubmitted]);
+
+  const fetchPercentile = useCallback(async () => {
+    if (!gameSetting.endStatus) return;
+    try {
+      const response = await axios.get(
+        `${SERVER_URL}/leaderboard/percentile/${gameSetting.score}/${playType}/${timeStampParam}`
+      );
+      if (response.data.status === 200) {
+        setPercentile(response.data.data.percentile);
+        setTotalPlayers(response.data.data.totalPlayers);
+      }
+    } catch (err) {
+      console.error("Failed to fetch percentile:", err);
+    }
+  }, [gameSetting.endStatus, gameSetting.score, playType, timeStampParam]);
 
   useEffect(() => {
     loadGameData();
@@ -277,6 +331,17 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
       }, 5000);
     }
   }, [explosion]);
+  useEffect(() => {
+    if (gameSetting.endStatus && user && !scoreSubmitted) {
+      submitScoreToLeaderboard();
+    }
+  }, [gameSetting.endStatus, user, scoreSubmitted, submitScoreToLeaderboard]);
+
+  useEffect(() => {
+    if (gameSetting.endStatus) {
+      fetchPercentile();
+    }
+  }, [gameSetting.endStatus, fetchPercentile]);
 
   return (
     <Box
@@ -285,11 +350,32 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
         playType === PlayType.NBA ? classes.nbaBg : classes.nflBg
       )}
     >
+{(user || !gameSetting.endStatus) && (
+      <Box sx={{ position: "absolute", top: "24px", left: { xs: "50%", md: "10px" }, transform: { xs: "translateX(-50%)", md: "none" }, zIndex: 10 }}>
+        <GoogleSignIn />
+      </Box>
+      )}
+     
+      {!user && !gameSetting.endStatus && gameSetting.createTime !== 0 && (
+        <Box sx={{
+          textAlign: "center",
+          padding: "6px 12px",
+          marginBottom: "8px",
+          backgroundColor: "rgba(255,255,255,0.05)",
+          borderRadius: "8px",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "12px" }}>
+            Sign in with Google to compete on the daily leaderboard!
+          </Typography>
+        </Box>
+      )}
+
       <Box className={classes.buttonContainer}>
         <Button
           className={classes.infoButton}
           variant="contained"
-          onClick={() => navigate("/")}
+          onClick={() => setInfoOpen(true)}
         >
           <Box className={classes.infoIcon}>
             <InfoIcon />
@@ -380,6 +466,16 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
           <Box className={classes.guessLeftTxt}>SCORE</Box>
           <Box className={classes.score}>{gameSetting.score}</Box>
         </Box>
+        {gameSetting.endStatus && percentile !== null && totalPlayers > 0 && (
+          <Typography sx={{
+            color: "#4CAF50",
+            fontSize: "13px",
+            textAlign: "center",
+            marginTop: "4px",
+          }}>
+            You beat {percentile}% of users today
+          </Typography>
+        )}
         {!gameSetting.endStatus && (
           <>
             <Button
@@ -417,13 +513,43 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
               Show Summary
             </Button>
           )}
+          {gameSetting.endStatus && (
+            <Button
+              variant="contained"
+              sx={{ textTransform: "none" }}
+              onClick={() => setShowLeaderboard(true)}
+            >
+              Daily Leaderboard
+            </Button>
+          )}
+
+          {user && gameSetting.endStatus && scoreSubmitted && (
+            <Typography sx={{ color: "#4CAF50", fontSize: "12px", marginTop: "4px", textAlign: "center" }}>
+              Score submitted to leaderboard!
+            </Typography>
+          )}
           <Button
             variant="contained"
-            sx={{ textTransform: "none", marginTop: "8px" }}
+            sx={{ textTransform: "none" }}
             onClick={() => setArchiveOpen(true)}
           >
-            Prior Grids
+Prior Grids
           </Button>
+          {!user && gameSetting.endStatus && (
+            <Box sx={{
+              textAlign: "center",
+              padding: "10px 16px",
+              marginTop: "8px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}>
+              <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "13px", marginBottom: "8px" }}>
+                Sign in to submit your score to the leaderboard!
+              </Typography>
+              <GoogleSignIn />
+            </Box>
+          )}
         </Box>
         <Box
           sx={{
@@ -434,7 +560,7 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
             marginTop: 3,
           }}
         >
-          Please note: AlumniGrid.com does not own any of the team, league or
+          Please note: ALUMNUSGRID LLC does not own any of the team, league or
           event logos depicted within this site. All sports logos contained
           within this site are properties of their respective leagues, teams,
           ownership groups and/or organizations.
@@ -458,12 +584,123 @@ const GameBoardIndex = ({ playType }: { playType: PlayType }) => {
         onClose={(summaryOpen) => setSummaryOpen(summaryOpen)}
         gameSetting={gameSetting}
         playType={playType}
+        percentile={percentile}
+        totalPlayers={totalPlayers}
       />
+<Modal open={infoOpen} onClose={() => setInfoOpen(false)} slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.3)" } } }}>
+<Box sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "white",
+          borderRadius: "16px",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          padding: { xs: "24px", md: "32px" },
+          width: { xs: "85%", md: "500px" },
+          maxHeight: { xs: "80vh", md: "85vh" },
+          overflowY: "auto",
+          textAlign: "center",
+        }}>
+          <IconButton
+            aria-label="close"
+            onClick={() => setInfoOpen(false)}
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Typography variant="h5" sx={{ fontWeight: "bold", marginBottom: "16px" }}>
+            Welcome to the AlumniGrid
+          </Typography>
+          <Typography sx={{ fontSize: "14px", color: "#333", textAlign: "left", lineHeight: 1.8 }}>
+            AlumniGrid is a daily sports trivia game.
+            <br /><br />
+            Each day, 9 squares containing an athlete's name are prompted.
+            <br /><br />
+            Players tap into each square and guess where each athlete went to college.
+            <br /><br />
+            If the athlete did not go to college, guess the high school or last school the athlete attended.
+            <br /><br />
+            If the athlete went to multiple colleges, guess the most recent school attended.
+            <br /><br />
+            Max 9 guesses per day.
+            <br />
+            Max 100 points per box for a correct answer.
+            <br />
+            The faster you complete, the higher the possible score.
+            <br /><br />
+            Head over to the summary page to share your grid with friends, view statistics, and play prior day grids!
+            <br /><br />
+            <strong>Come back tomorrow for a new grid! Refreshes at 12am PST</strong>
+            <br /><br />
+           <strong>Note: The game is currently in beta. NBA and NFL grids are available at this time. Stay tuned…</strong>
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "24px" }}>
+            <Button
+              variant="contained"
+              sx={{ textTransform: "none", backgroundColor: "#1976d2" }}
+              onClick={() => {
+                setInfoOpen(false);
+                if (playType !== PlayType.NBA) window.location.href = "/game/nba";
+              }}
+            >
+              Start NBA 🏀
+            </Button>
+            <Button
+              variant="contained"
+              sx={{ textTransform: "none", backgroundColor: "#388e3c" }}
+              onClick={() => {
+                setInfoOpen(false);
+                if (playType !== PlayType.NFL) window.location.href = "/game/nfl";
+              }}
+            >
+             Start NFL 🏈
+          </Button>
+          </Box>
+          <Typography sx={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
+            Click on the sport icons to switch grids
+          </Typography>
+        </Box>
+      </Modal>
       <ArchiveModal
         open={archiveOpen}
         onClose={(archiveOpen) => setArchiveOpen(archiveOpen)}
         playType={playType}
       />
+<Modal open={showLeaderboard} onClose={() => setShowLeaderboard(false)} slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.3)" } } }}>
+<Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+          <DailyLeaderboard
+            playType={playType}
+            timestamp={timeStampParam}
+            onClose={() => setShowLeaderboard(false)}
+          />
+        </Box>
+      </Modal>
+      {showLeaderboard && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowLeaderboard(false)}
+        >
+          <Box onClick={(e) => e.stopPropagation()}>
+            <DailyLeaderboard
+              playType={playType}
+              timestamp={timeStampParam}
+              onClose={() => setShowLeaderboard(false)}
+            />
+          </Box>
+        </Box>
+      )}
       {explosion && (
         <ConfettiExplosion
           duration={3000}
