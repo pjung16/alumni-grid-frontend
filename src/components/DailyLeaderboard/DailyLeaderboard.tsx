@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -11,6 +11,7 @@ import axios from "axios";
 import { SERVER_URL } from "../../config/config";
 import { PlayType, PlayTypeInfo } from "../../constant/const";
 import { useAuth } from "../../context/AuthContext";
+import gsap from "gsap";
 
 interface LeaderboardEntry {
   id: number;
@@ -33,6 +34,16 @@ const DailyLeaderboard: React.FC<{
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+const modalRef = useRef(null);
+useEffect(() => {
+    if (modalRef.current) {
+      gsap.fromTo(
+        modalRef.current,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -60,15 +71,18 @@ const DailyLeaderboard: React.FC<{
   };
 
   return (
-    <Box
+   <Box
+      ref={modalRef}
       sx={{
-        backgroundColor: "rgba(0,0,0,0.85)",
+        opacity: 0,
+background: "white",
         borderRadius: "12px",
-        padding: "20px",
-        maxWidth: "400px",
-        width: "100%",
-        maxHeight: "500px",
-        overflow: "auto",
+        boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.3)",
+        padding: "32px",
+        width: { xs: "85%", md: "400px" },
+        maxHeight: { xs: "500px", md: "550px" },
+        overflowY: "auto",
+        textAlign: "center",
       }}
     >
       <Box
@@ -79,14 +93,15 @@ const DailyLeaderboard: React.FC<{
           marginBottom: "16px",
         }}
       >
-        <Typography
+       <Typography
           sx={{
-            color: "white",
-            fontSize: "18px",
+            color: "#333",
+            fontSize: "15px",
             fontWeight: "bold",
             display: "flex",
             alignItems: "center",
             gap: "8px",
+            whiteSpace: "nowrap",
           }}
         >
           <EmojiEventsIcon sx={{ color: "#FFD700" }} />
@@ -95,7 +110,7 @@ const DailyLeaderboard: React.FC<{
         {onClose && (
           <Button
             onClick={onClose}
-            sx={{ color: "white", minWidth: "auto", fontSize: "18px" }}
+            sx={{ color: "#333", minWidth: "auto", fontSize: "15px" }}
           >
             ✕
           </Button>
@@ -104,11 +119,11 @@ const DailyLeaderboard: React.FC<{
 
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", padding: "20px" }}>
-          <CircularProgress sx={{ color: "white" }} size={30} />
+          <CircularProgress sx={{ color: "#333" }} size={30} />
         </Box>
       ) : entries.length === 0 ? (
         <Typography
-          sx={{ color: "rgba(255,255,255,0.6)", textAlign: "center", padding: "20px" }}
+          sx={{ color: "rgba(0,0,0,0.5)", textAlign: "center", padding: "20px" }}
         >
           No scores yet today. Be the first!
         </Typography>
@@ -159,7 +174,7 @@ const DailyLeaderboard: React.FC<{
               />
               <Typography
                 sx={{
-                  color: "white",
+                  color: "#333",
                   fontSize: "14px",
                   flex: 1,
                   overflow: "hidden",
@@ -189,7 +204,7 @@ const DailyLeaderboard: React.FC<{
       {!user && (
         <Typography
           sx={{
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(0,0,0,0.4)",
             fontSize: "12px",
             textAlign: "center",
             marginTop: "12px",

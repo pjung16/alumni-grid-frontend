@@ -1,5 +1,5 @@
 ﻿import "./App.css";
-import { Route, Routes, BrowserRouter as Router } from "react-router-dom";
+import { Route, Routes, BrowserRouter as Router, Navigate } from "react-router-dom";
 import GameBoardIndex from "./pages/GameBoard/GameBoardIndex";
 import Landing from "./pages/Landing/Landing";
 import { Provider } from "react-redux";
@@ -16,7 +16,7 @@ function App() {
         <div className="App">
           <Router>
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<Navigate to="/game/nba" replace />} />
               <Route
                 path="/game/nba"
                 element={<GameBoardIndex playType={PlayType.NBA} />}
