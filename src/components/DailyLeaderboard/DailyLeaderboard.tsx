@@ -23,9 +23,9 @@ interface LeaderboardEntry {
     id: number;
     name: string;
     picture: string;
+    username: string;
   };
 }
-
 const DailyLeaderboard: React.FC<{
   playType: PlayType;
   timestamp: number;
@@ -182,7 +182,7 @@ background: "white",
                   whiteSpace: "nowrap",
                 }}
               >
-                {entry.User?.name}
+                {entry.User?.username || entry.User?.name}
                 {user?.id === entry.userId && (
                   <span style={{ opacity: 0.5, marginLeft: "4px" }}>(You)</span>
                 )}

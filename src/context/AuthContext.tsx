@@ -8,6 +8,7 @@ interface AuthUser {
   email: string;
   name: string;
   picture: string;
+  username?: string;
 }
 
 interface AuthContextType {
@@ -15,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credential: string) => Promise<void>;
   logout: () => void;
+  setUsername: (username: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: async () => {},
   logout: () => {},
+  setUsername: async () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -65,8 +68,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("alumniGridUser");
   }, []);
 
+  const setUsernameFunc = useCallback(async (username: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const response = await axios.post(`${SERVER_URL}/auth/set-username`, {
+        userId: user.id,
+        username,
+      });
+      if (response.data.status === 200) {
+        const updatedUser = { ...user, username: response.data.username };
+        setUser(updatedUser);
+        localStorage.setItem("alumniGridUser", JSON.stringify(updatedUser));
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      if (err.response?.data?.message) {
+        throw new Error(err.response.data.message);
+      }
+      throw err;
+    }
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, setUsername: setUsernameFunc }}>
       {children}
     </AuthContext.Provider>
   );
